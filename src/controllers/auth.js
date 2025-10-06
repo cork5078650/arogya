@@ -57,37 +57,60 @@ async function getTransporter() {
   return transporterPromise;
 }
 
+// 📧 NEW: send email using Resend API
 async function sendVerificationEmail(toEmail, token) {
-  const transporter = await getTransporter();
-  
-  // Token is a hex string, no encoding needed.
   const verifyUrl = `${APP_BASE_URL}/api/users/verify-email?token=${token}`;
-
-  // Log the final URL being used in the email for debugging
   console.log(`🔗 Verification URL sent to ${toEmail}: ${verifyUrl}`);
 
-  const info = await transporter.sendMail({
-    from: process.env.FROM_EMAIL || process.env.SMTP_USER || 'no-reply@example.com',
-    to: toEmail,
-    subject: 'Verify your email for Arogya',
-    html: `
-      <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:16px">
-        <h2>Verify your email</h2>
-        <p>Click the button below to verify your email and finish creating your account.</p>
-        <p style="margin:20px 0">
-          <a href="${verifyUrl}" style="background:#2563eb;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;">Verify Email</a>
-        </p>
-        <p>If the button doesn't work, copy & paste this link:</p>
-        <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-        <p>This link expires in ${VERIFY_TTL_MINUTES} minutes.</p>
-      </div>
-    `,
-  });
+  try {
+    if (process.env.EMAIL_PROVIDER === 'resend') {
+      const fetch = (await import('node-fetch')).default;
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
+          to: toEmail,
+          subject: 'Verify your email for Arogya',
+          html: `
+            <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:16px">
+              <h2>Verify your email</h2>
+              <p>Click the button below to verify your email and finish creating your account.</p>
+              <p style="margin:20px 0">
+                <a href="${verifyUrl}" style="background:#2563eb;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;">Verify Email</a>
+              </p>
+              <p>If the button doesn't work, copy & paste this link:</p>
+              <p><a href="${verifyUrl}">${verifyUrl}</a></p>
+              <p>This link expires in ${VERIFY_TTL_MINUTES} minutes.</p>
+            </div>
+          `
+        })
+      });
 
-  const preview = nodemailer.getTestMessageUrl(info);
-  if (preview) console.log('🔍 Ethereal preview URL:', preview);
+      const data = await response.json();
+      if (!response.ok) {
+        console.error('❌ Resend error:', data);
+      } else {
+        console.log('✅ Resend email queued:', data.id);
+      }
+      return;
+    }
+
+    // fallback (Ethereal or SMTP)
+    const transporter = await getTransporter();
+    await transporter.sendMail({
+      from: process.env.FROM_EMAIL || 'no-reply@example.com',
+      to: toEmail,
+      subject: 'Verify your email for Arogya',
+      html: `<p>Please verify your email: <a href="${verifyUrl}">${verifyUrl}</a></p>`,
+    });
+  } catch (err) {
+    console.error('❌ sendVerificationEmail failed:', err);
+  }
 }
-
 // -------------- Helpers --------------
 function normalizeEmail(e) { return String(e || '').trim().toLowerCase(); }
 
