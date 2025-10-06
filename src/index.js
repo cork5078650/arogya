@@ -44,7 +44,11 @@ const PORT = process.env.PORT || 4000;
     });
 
     // 4. Start the Server
-    app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+    app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌐 Visit: ${process.env.APP_BASE_URL || 'http://localhost:' + PORT}`);
+});
+
 
   } catch (err) {
     console.error('❌ Failed to start server:', err.message || err);

@@ -59,7 +59,9 @@
 
   <script>
     // CONFIG
-    const API_BASE = 'http://localhost:4000';
+   const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:4000'
+  : location.origin;
     const IMG_BASE = '/images/';
     const PLACEHOLDER = 'https://via.placeholder.com/600x400?text=Recipe';
     const grid = document.querySelector('#recipes-grid');
