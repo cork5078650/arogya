@@ -1,14 +1,16 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
+// ❌ REMOVE nodemailer import
+// const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
-// NOTE: These variables are loaded from your .env file
+// ✅ ADD Resend
+const { Resend } = require('resend');
+
 const APP_BASE_URL = process.env.APP_BASE_URL || 'http://localhost:4000';
 const VERIFY_TTL_MINUTES = parseInt(process.env.VERIFY_TTL_MINUTES || '10', 10);
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
-
 // -------------- Mailer Setup (Handles Gmail/Live SMTP or Ethereal fallback) --------------
 let transporterPromise = null;
 
