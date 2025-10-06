@@ -3,355 +3,550 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Meal Plan • Arogya</title>
+  <title>Dashboard • Arogya</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/styles.css">
-
+  <link rel="stylesheet" href="styles.css" />
   <style>
     :root {
-      --beige: #F1DABF; 
-      --mint-green: #B4D9BB; 
+      --beige:#F1DABF;
+      --cream:#F5F0E1; 
+      --sage:#B4D9BB;
+      --peach:#E49377;
     }
+    .chip {
+      display:inline-block;background-color:var(--peach);color:#fff;
+      padding:0.1rem 0.5rem;border-radius:9999px;font-size:0.75rem;
+    }
+    /* small inline debug row */
+    #calcDebug {font-size:12px;color:#334155}
+    #calcDebug span {display:inline-block;margin-right:10px}
+    #calcDebug.hidden {display:none}
   </style>
 </head>
 <body class="bg-[var(--cream)] text-[var(--teal)] font-sans">
 
-  <header class="bg-[var(--teal)] fixed w-full top-0 z-50 shadow-md shadow-black/10">
+  <header class="bg-[var(--teal)] fixed w-full top-0 z-50 shadow-md">
     <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-      <div class="text-2xl font-bold text-white tracking-wide">Arogya</div>
-      <nav class="flex items-center gap-4">
-        <a href="/dashboard.html" class="text-white/90 hover:text-[var(--sage)] transition-colors">Dashboard</a>
-        <a class="text-[var(--sage)] font-semibold" href="/mealplan.html">Meal Plan</a>
-        <a href="/recipes.html" class="text-white/90 hover:text-[var(--sage)] transition-colors">Recipes</a>
-        <button id="logoutBtn" class="bg-[var(--peach)] px-4 py-2 rounded-lg text-white font-semibold shadow hover:bg-opacity-90">
+      <h1 class="text-2xl font-bold text-white">Arogya</h1>
+      <nav class="flex items-center space-x-4">
+        <a href="dashboard.html" class="text-white font-medium hover:text-[var(--sage)]">Dashboard</a>
+        <a href="mealplan.html" class="text-white font-medium hover:text-[var(--sage)]">Meal Plan</a>
+        <a href="recipes.html" class="text-white font-medium hover:text-[var(--sage)]">Recipes</a>
+        <button id="logoutBtn" class="bg-[var(--peach)] px-4 py-2 rounded-lg text-white font-semibold hover:bg-opacity-90">
           Logout
         </button>
       </nav>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto pt-28 pb-16 px-6">
-    <h1 class="text-3xl md:text-4xl font-extrabold mb-6 text-center tracking-tight">Your Meal Plan</h1>
+  <main class="min-h-screen pt-28 pb-12 flex flex-col items-center">
 
-    <section id="summary" class="mb-6"></section>
-
-    <section>
-      <div id="plan-grid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
-
-      <div class="flex flex-wrap justify-center gap-3 mt-6">
-        <button id="generateBtn" class="bg-[var(--peach)] text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-opacity-90">
-          🔁 Generate New Meal Plan
-        </button>
-        <button id="swapBreakfast" class="px-4 py-2 rounded-lg font-semibold border border-[var(--sage)] bg-[var(--beige)] hover:bg-[var(--sage)]/40">
-          Change Breakfast
-        </button>
-        <button id="swapLunch" class="px-4 py-2 rounded-lg font-semibold border border-[var(--sage)] bg-[var(--beige)] hover:bg-[var(--sage)]/40">
-          Change Lunch
-        </button>
-        <button id="swapSnack" class="px-4 py-2 rounded-lg font-semibold border border-[var(--sage)] bg-[var(--beige)] hover:bg-[var(--sage)]/40">
-          Change Snack
-        </button>
-        <button id="swapDinner" class="px-4 py-2 rounded-lg font-semibold border border-[var(--sage)] bg-[var(--beige)] hover:bg-[var(--sage)]/40">
-          Change Dinner
-        </button>
+    <div class="flex flex-col items-center mb-8">
+      <div id="profilePic" class="w-32 h-32 rounded-full bg-[var(--sage)] flex items-center justify-center text-4xl text-[var(--teal)] mb-4 overflow-hidden">
+        <span>👤</span>
       </div>
+      <label class="cursor-pointer bg-[var(--peach)] text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-90">
+        Upload Picture
+        <input type="file" id="uploadPic" accept="image/*" class="hidden" />
+      </label>
+      <h2 id="welcomeName" class="mt-4 text-2xl font-bold"></h2>
+    </div>
 
-      <div id="plan-status" class="text-center text-[color:var(--ink-700)] mt-3"></div>
+    <section id="formContainer" class="w-full max-w-2xl bg-[var(--sage)] p-8 rounded-xl shadow-lg space-y-6">
+      <h3 class="text-xl font-bold mb-2">Your Profile</h3>
+      <form id="profileForm" class="space-y-4">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-medium mb-1">Gender</label>
+            <select id="gender" class="w-full p-2 rounded-lg border bg-[var(--cream)]">
+              <option>Male</option>
+              <option>Female</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Age</label>
+            <input type="number" id="age" min="10" max="100" required class="w-full p-2 rounded-lg border bg-[var(--cream)]" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-medium mb-1">Height</label>
+            <div class="flex gap-2">
+              <select id="heightUnit" class="p-2 rounded-lg border bg-[var(--cream)]">
+                <option value="cm">cm</option>
+                <option value="ft">ft/in</option>
+              </select>
+              <input type="number" id="height_cm" placeholder="cm" min="120" max="230" class="w-full p-2 rounded-lg border bg-[var(--cream)]" />
+              <input type="number" id="height_ft" placeholder="ft" min="4" max="7" class="w-full p-2 rounded-lg border bg-[var(--cream)] hidden" />
+              <input type="number" id="height_in" placeholder="in" min="0" max="11" class="w-full p-2 rounded-lg border bg-[var(--cream)] hidden" />
+            </div>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Weight (kg)</label>
+            <input type="number" id="weight" min="35" max="200" required class="w-full p-2 rounded-lg border bg-[var(--cream)]" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-medium mb-1">Activity Level</label>
+            <select id="activity" class="w-full p-2 rounded-lg border bg-[var(--cream)]">
+              <option>Sedentary</option>
+              <option>Lightly Active</option>
+              <option>Moderately Active</option>
+              <option>Very Active</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Goal</label>
+            <select id="goal" class="w-full p-2 rounded-lg border bg-[var(--cream)]">
+              <option>Lose Weight</option>
+              <option>Maintain Weight</option>
+              <option>Gain Weight</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-medium mb-1">Health Issues (select up to 5)</label>
+          <input id="healthSearch" type="text" placeholder="Search health issues…" class="w-full p-2 rounded-lg border bg-[var(--cream)] mb-2">
+          <div id="healthList" class="bg-white rounded-lg border p-3 max-h-56 overflow-auto"></div>
+          <p class="text-sm text-gray-700 mt-1">Selected: <span id="healthSelectedCount">0</span>/5</p>
+        </div>
+
+        <div>
+          <label class="block font-medium mb-1">Foods You Dislike / Avoid (select up to 12)</label>
+          <input id="ingSearch" type="text" placeholder="Search ingredients…" class="w-full p-2 rounded-lg border bg-[var(--cream)] mb-2">
+          <div id="ingList" class="bg-white rounded-lg border p-3 max-h-64 overflow-auto"></div>
+          <p class="text-sm text-gray-700 mt-1">Selected: <span id="ingSelectedCount">0</span>/12</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-medium mb-1">Food Preference</label>
+            <select id="foodPref" class="w-full p-2 rounded-lg border bg-[var(--cream)]">
+              <option>Vegetarian</option>
+              <option>Non-Vegetarian</option>
+              <option>Vegan</option>
+            </select>
+          </div>
+          <input type="hidden" id="health" />
+          <input type="hidden" id="dislikes" />
+        </div>
+
+        <button type="submit" class="w-full bg-[var(--peach)] text-white py-2 rounded-lg font-semibold hover:bg-opacity-90">
+          Save Profile
+        </button>
+        <p id="saveMsg" class="text-sm text-center"></p>
+      </form>
     </section>
+
+    <section id="profileCardContainer" class="hidden w-full max-w-2xl bg-[var(--sage)] p-8 rounded-xl shadow-lg space-y-6 mt-6">
+      <h3 class="text-xl font-bold">Your Profile</h3>
+      <div id="profileDetails"></div>
+
+      <div id="calcDebug" class="hidden mt-1"></div>
+
+      <button id="editProfile" class="mt-2 w-full bg-[var(--peach)] text-white py-2 rounded-lg font-semibold hover:bg-opacity-90">
+        Edit Profile
+      </button>
+    </section>
+
   </main>
 
-  <footer class="bg-[var(--teal)] text-white py-6 text-center">
+  <footer class="bg-[var(--teal)] text-white py-6 mt-12 text-center">
     &copy; 2025 Arogya
   </footer>
 
   <script>
-    const API_BASE = 'http://localhost:4000';
-    const MEALPLAN_URL = API_BASE + '/api/mealplan';
-    const IMG_BASE = '/images/';
+  const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:4000'
+    : location.origin;
+  const API = API_BASE; // ✅ FIX: define API so all fetch(`${API}...`) calls work
 
-    const user = JSON.parse(localStorage.getItem('loggedInUser'));
-    const token = localStorage.getItem('token');
-    if (!user) { alert('Please log in first!'); window.location.href = '/login.html'; }
+  const HEALTH_MAX = 5;
+  const ING_MAX = 12;
 
-    document.getElementById('logoutBtn').addEventListener('click', ()=>{
-      localStorage.removeItem('loggedInUser'); localStorage.removeItem('token');
-      window.location.href = '/login.html';
-    });
+  // ---------- session guard ----------
+  let loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+  if (!loggedInUser || !loggedInUser.email) {
+    alert("Please log in first!");
+    window.location.href = "login.html";
+  }
+  document.getElementById("welcomeName").innerText = `Welcome, ${loggedInUser.name || ''}!`;
 
-    const summaryEl = document.getElementById('summary');
-    const gridEl = document.getElementById('plan-grid');
-    const statusEl = document.getElementById('plan-status');
+  // ---------- picture upload ----------
+  document.getElementById("uploadPic").addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      document.getElementById("profilePic").innerHTML =
+        `<img src="${evt.target.result}" class="w-32 h-32 rounded-full object-cover">`;
+      loggedInUser.profile = loggedInUser.profile || {};
+      loggedInUser.profile.profilePic = evt.target.result;
+      localStorage.setItem("loggedInUser", JSON.stringify(loggedInUser));
+    };
+    reader.readAsDataURL(file);
+  });
 
-    let lastPlan = null;
+  // ---------- helpers ----------
+  function clamp(n, min, max){ return Math.min(max, Math.max(min, n)); }
 
-    const clean = s => String(s||'').replace(/\*\*([^*]+)\*\*/g, (_,m)=>m.replace(/_/g,' '));
-    const toTitle = s => String(s||'').replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+  function normalizeActivity(a){
+    const m = (a||'').toLowerCase();
+    if (m.includes('very')) return 'very active';
+    if (m.includes('moderately')) return 'moderately active';
+    if (m.includes('light')) return 'lightly active';
+    return 'sedentary';
+  }
 
-    function getTargetsFromProfile(){
-      const p = (user && user.profile) ? user.profile : {};
-      const kcal    = Math.round(Number(p.calories || 0));
-      const protein = Math.round(Number(p.protein  || 0));
-      const macros  = p.macros || {};
-      const carbs   = Math.round(Number(macros.carbs?.grams || 0));
-      const fat     = Math.round(Number(macros.fat?.grams   || 0));
-      return { kcal, protein, carbs, fat };
+  // ---------- macro helpers ----------
+  function calculateMacros(totalCalories, proteinGrams, options = {}) {
+    const defaults = { carbsPct: 0.50, fatPct: 0.30 };
+    const { carbsPct, fatPct } = Object.assign({}, defaults, options);
+    const CAL_PER_G_PROTEIN = 4, CAL_PER_G_CARB = 4, CAL_PER_G_FAT = 9;
+    const proteinCalories = proteinGrams * CAL_PER_G_PROTEIN;
+    const remainingCalories = Math.max(0, totalCalories - proteinCalories);
+    let c = carbsPct, f = fatPct;
+    if (c + f <= 0) { c = 0.75; f = 0.25; }
+    const sum = c + f;
+    const carbRatio = c / sum;
+    const fatRatio  = f / sum;
+    const carbsCalories = Math.round(remainingCalories * carbRatio);
+    const fatCalories   = Math.round(remainingCalories * fatRatio);
+    return {
+      protein: { grams: proteinGrams, calories: proteinCalories },
+      carbs:   { grams: Math.round(carbsCalories / CAL_PER_G_CARB), calories: carbsCalories },
+      fat:     { grams: Math.round(fatCalories   / CAL_PER_G_FAT),  calories: fatCalories   },
+      totals: {
+        caloriesFromProtein: proteinCalories,
+        caloriesFromCarbs: carbsCalories,
+        caloriesFromFat: fatCalories,
+        totalCalculatedCalories: proteinCalories + carbsCalories + fatCalories
+      },
+      usedSplit: { carbsPct: c, fatPct: f }
+    };
+  }
+
+  function readHeightCmFromForm(){
+    const unit = document.getElementById('heightUnit').value;
+    if (unit === 'cm') {
+      const cm = parseFloat(document.getElementById('height_cm').value);
+      return isFinite(cm) ? cm : 0;
+    } else {
+      const ft = parseFloat(document.getElementById('height_ft').value);
+      const inch = parseFloat(document.getElementById('height_in').value);
+      const ftv = isFinite(ft) ? ft : 0;
+      const inv = isFinite(inch) ? inch : 0;
+      return (ftv * 30.48) + (inv * 2.54);
+    }
+  }
+
+  function calculateMetrics(profile) {
+    let { gender, age, height, weight, activity, goal } = profile;
+
+    age = clamp(parseInt(age)||0, 10, 100);
+    height = clamp(Math.round(height)||0, 120, 230);
+    weight = clamp(parseFloat(weight)||0, 35, 200);
+
+    const act = normalizeActivity(activity);
+    const pref = (profile.dietaryType || '').toLowerCase();
+
+    let bmr = 0;
+    if (String(gender).toLowerCase() === 'male') {
+      bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+    } else {
+      bmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
     }
 
-    function computePlanTotals(data){
-      const slots = ['Breakfast','Lunch','Snack','Dinner'];
-      let kcal=0, protein=0, carbs=0, fat=0;
-      slots.forEach(s=>{
-        const r = data?.mealPlan?.[s]?.recipe;
-        if (!r) return;
-        kcal    += Number(r.calories) || 0;
-        protein += Number(r.protein)  || 0;
-        carbs   += Number(r.carbs)    || 0;
-        fat     += Number(r.fats)     || 0;
-      });
-      return { kcal: Math.round(kcal), protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat) };
+    const mults = { 'sedentary':1.2, 'lightly active':1.375, 'moderately active':1.55, 'very active':1.725 };
+    const tdee = bmr * (mults[act] || 1.2);
+
+    let finalCalories = Math.round(tdee);
+    const g = (goal||'').toLowerCase();
+    if (g.includes('lose')) finalCalories = Math.round(tdee - 500);
+    else if (g.includes('gain')) finalCalories = Math.round(tdee + 500);
+
+    let proteinMultiplier = 1.2;
+    if (act==='sedentary' || act==='lightly active') {
+      proteinMultiplier = (pref==='vegetarian' || pref==='vegan') ? 1.0 : 1.1;
+    } else if (act==='moderately active') {
+      proteinMultiplier = (pref==='vegetarian' || pref==='vegan') ? 1.2 : 1.3;
+    } else if (act==='very active' || g.includes('gain')) {
+      proteinMultiplier = (pref==='vegetarian' || pref==='vegan') ? 1.4 : 1.5;
     }
 
-    function renderSummary(data){
-      const target = getTargetsFromProfile();
-      const totals = computePlanTotals(data);
-      summaryEl.innerHTML = `
-        <div class="rounded-2xl p-5 shadow-md border border-[var(--sage)] bg-[var(--mint-green)]">
-          <div class="grid sm:grid-cols-2">
-            <div class="p-3">
-              <p class="font-bold text-[var(--teal)] mb-1 text-base text-center">🎯 Target</p>
-              <div class="flex flex-wrap gap-3 justify-center text-base leading-6">
-                <span><strong>${target.kcal}</strong> kcal</span>
-                <span><strong>${target.protein}</strong> g protein</span>
-                <span><strong>${target.carbs}</strong> g carbs</span>
-                <span><strong>${target.fat}</strong> g fat</span>
-              </div>
-            </div>
-            <div class="p-3 border-t sm:border-t-0 sm:border-l border-[var(--sage)]">
-              <p class="font-bold text-[var(--teal)] mb-1 text-base text-center">📋 Current Plan</p>
-              <div class="flex flex-wrap gap-3 justify-center text-base leading-6">
-                <span><strong>${totals.kcal}</strong> kcal</span>
-                <span><strong>${totals.protein}</strong> g protein</span>
-                <span><strong>${totals.carbs}</strong> g carbs</span>
-                <span><strong>${totals.fat}</strong> g fat</span>
-              </div>
-            </div>
-          </div>
-        </div>`;
+    const proteinGrams = Math.max(40, Math.round(weight * proteinMultiplier));
+    const macroTargets = calculateMacros(finalCalories, proteinGrams, { carbsPct: 0.50, fatPct: 0.30 });
+
+    return { calories: finalCalories, proteinGrams, macros: macroTargets, _debug: {gender, age, height, weight, act, bmr: Math.round(bmr), tdee: Math.round(tdee)} };
+  }
+
+  function showForm() {
+    document.getElementById('formContainer').classList.remove('hidden');
+    document.getElementById('profileCardContainer').classList.add('hidden');
+  }
+
+  function renderProfile(profile) {
+    const dbgRow = document.getElementById('calcDebug');
+    const { calories, proteinGrams, macros, _debug } = calculateMetrics(profile);
+    profile.calories = calories;
+    profile.protein  = proteinGrams;
+    profile.macros   = macros;
+
+    const heightDisplay = (profile.heightUnit === 'ft')
+      ? (() => {
+          const totalInches = profile.height / 2.54;
+          const feet = Math.floor(totalInches / 12);
+          const inches = Math.round(totalInches % 12);
+          return `${feet} ft ${inches} in`;
+        })()
+      : `${Math.round(profile.height)} cm`;
+
+    const healthChips = (Array.isArray(profile.health_slugs) ? profile.health_slugs : [])
+      .map(s => `<span class="chip">${s.replaceAll('_',' ')}</span>`).join(' ');
+    const dislikeChips = (Array.isArray(profile.dislike_slugs) ? profile.dislike_slugs : [])
+      .map(s => `<span class="chip">${s.replaceAll('_',' ')}</span>`).join(' ');
+
+    document.getElementById('profileDetails').innerHTML = `
+      <p><strong>Daily Target Calories:</strong> ${calories} kcal</p>
+      <div class="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-3 bg-[var(--beige)] rounded shadow">
+          <p class="font-semibold">Protein</p>
+          <p>${macros.protein.grams} g (~${macros.protein.calories} kcal)</p>
+        </div>
+        <div class="p-3 bg-[var(--beige)] rounded shadow">
+          <p class="font-semibold">Carbohydrates</p>
+          <p>${macros.carbs.grams} g (~${macros.carbs.calories} kcal)</p>
+        </div>
+        <div class="p-3 bg-[var(--beige)] rounded shadow">
+          <p class="font-semibold">Fat</p>
+          <p>${macros.fat.grams} g (~${macros.fat.calories} kcal)</p>
+        </div>
+      </div>
+      <hr class="my-4 border-[var(--teal)]">
+      <p><strong>Gender:</strong> ${profile.gender}</p>
+      <p><strong>Age:</strong> ${profile.age}</p>
+      <p><strong>Height:</strong> ${heightDisplay}</p>
+      <p><strong>Weight:</strong> ${profile.weight} kg</p>
+      <p><strong>Activity:</strong> ${profile.activity}</p>
+      <p><strong>Goal:</strong> ${profile.goal}</p>
+      <p><strong>Food Preference:</strong> ${profile.dietaryType}</p>
+      <div class="mt-3">
+        <p class="font-semibold mb-1">Health Issues:</p>
+        ${healthChips || `<span class="text-sm text-gray-700">${profile.health || 'none'}</span>`}
+      </div>
+      <div class="mt-2">
+        <p class="font-semibold mb-1">Avoid / Dislikes:</p>
+        ${dislikeChips || `<span class="text-sm text-gray-700">${profile.dislikes || 'none'}</span>`}
+      </div>
+      <p class="mt-4 text-sm text-gray-700">Macro split used: carbs ${Math.round(macros.usedSplit.carbsPct*100)}%, fat ${Math.round(macros.usedSplit.fatPct*100)}%.</p>
+    `;
+
+    if ((_debug.height <= 0) || (_debug.weight <= 0)) {
+      dbgRow.classList.remove('hidden');
+      dbgRow.innerHTML = `
+        <span><strong>DEBUG</strong></span>
+        <span>gender=${_debug.gender}</span>
+        <span>age=${_debug.age}</span>
+        <span>height=${_debug.height}cm</span>
+        <span>weight=${_debug.weight}kg</span>
+        <span>activity=${_debug.act}</span>
+        <span>BMR=${_debug.bmr}</span>
+        <span>TDEE=${_debug.tdee}</span>
+      `;
+    } else {
+      dbgRow.classList.add('hidden');
+      dbgRow.innerHTML = '';
     }
 
-    function badgeRow(pick){
-      const chip = (c) => `<span class="inline-block bg-[var(--sage)]/60 text-[var(--teal)] text-[11px] font-semibold px-2 py-1 rounded-full">${c}</span>`;
-      const subs = (pick.substitutes || []).map(s => chip('🔁 '+s)).join(' ');
-      const hidd = (pick.hidden || []).map(s => chip('🚫 '+s)).join(' ');
-      const caut = (pick.cautions || []).map(s => chip('⚠️ '+s)).join(' ');
-      return [subs, hidd, caut].filter(Boolean).join(' ');
-    }
+    document.getElementById('formContainer').classList.add('hidden');
+    document.getElementById('profileCardContainer').classList.remove('hidden');
 
-    function cardTpl(slot, pick){
-      const r = pick.recipe;
-      const tags = (r.tags || []).slice(0,3).map(
-        t=>`<span class="inline-block bg-[var(--sage)] text-[var(--teal)] text-[11px] font-semibold px-2 py-1 rounded-full mr-1 mb-1">${t}</span>`
-      ).join(' ');
-      const badges = badgeRow(pick);
+    loggedInUser.profile = profile;
+    localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
+  }
+
+  document.getElementById('heightUnit').addEventListener('change', function() {
+    const unit = this.value;
+    const cm = document.getElementById('height_cm');
+    const ft = document.getElementById('height_ft');
+    const inch = document.getElementById('height_in');
+    if (unit === 'cm') {
+      cm.classList.remove('hidden'); ft.classList.add('hidden'); inch.classList.add('hidden');
+    } else {
+      cm.classList.add('hidden'); ft.classList.remove('hidden'); inch.classList.remove('hidden');
+    }
+  });
+
+  // ---------- meta lists (health + ingredients) ----------
+  const state = {
+    allHealth: [], allIngs: [],
+    selHealth: new Set(), selIngs: new Set()
+  };
+
+  function renderCheckboxList(items, container, selectedSet, max, counterElId, labelKey, slugKey){
+    const q = (container.dataset.query || '').toLowerCase();
+    const subset = q ? items.filter(x => String(x[labelKey]).toLowerCase().includes(q)) : items;
+
+    container.innerHTML = subset.map(x=>{
+      const slug = x[slugKey];
+      const label = x[labelKey];
+      const checked = selectedSet.has(slug) ? 'checked' : '';
       return `
-        <article class="bg-[var(--beige)] border border-[var(--sage)] rounded-2xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow">
-          <img class="w-full h-40 object-cover bg-[var(--sage)]/30" src="${IMG_BASE}${r.image_url}" alt="${r.recipe_name}" loading="lazy">
-          <div class="p-4 flex flex-col gap-3 flex-1">
-            <div>
-              <h3 class="text-lg font-bold">${slot}: ${r.recipe_name}</h3>
-              <div class="flex flex-wrap gap-2 text-sm mt-1.5">
-                <span>${r.calories} kcal</span>
-                ${Number.isFinite(r.protein) ? `<span>${r.protein} g protein</span>` : ``}
-                ${Number.isFinite(r.carbs)   ? `<span>${r.carbs} g carbs</span>`   : ``}
-                ${Number.isFinite(r.fats)    ? `<span>${r.fats} g fat</span>`      : ``}
-                <span>${r.time_minutes} min</span>
-                <span>${r.dietaryType}</span>
-              </div>
-              ${tags ? `<div class="mt-2">${tags}</div>` : ``}
-              ${badges ? `<div class="mt-2">${badges}</div>` : ``}
-            </div>
-            <div class="mt-auto">
-              <a class="block text-center bg-[var(--peach)] text-white py-2 rounded-lg font-semibold shadow hover:bg-opacity-90 transition view-btn" href="#" data-slot="${slot}" data-slug="${r.slug}">
-                View Recipe
-              </a>
-            </div>
-          </div>
-        </article>`;
-    }
+        <label class="flex items-center gap-2 py-1 cursor-pointer">
+          <input type="checkbox" data-slug="${slug}" ${checked}>
+          <span>${label}</span>
+          ${x.type ? `<span class="chip">${x.type}</span>` : ''}
+        </label>
+      `;
+    }).join('');
 
-    function renderPlan(planData){
-      const slots = ['Breakfast','Lunch','Snack','Dinner'];
-      const cards = slots.map(s=>{
-        const pick = planData.mealPlan?.[s];
-        return pick?.recipe ? cardTpl(s,pick) : '';
-      }).filter(Boolean);
-      gridEl.innerHTML = cards.length ? cards.join('') : `<p class="text-center">No items returned.</p>`;
-      renderSummary(planData);
-    }
-
-    function lockScroll(lock){ document.body.style.overflow = lock ? 'hidden' : ''; }
-    function showRecipeModal({title, img, meta, ingredientsHtml, stepsHtml, notes}){
-      const html = `
-        <div class="modal-backdrop"></div>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="${title}">
-          <button class="modal-close" aria-label="Close recipe">×</button>
-          <h2 class="modal-title">${title}</h2>
-          <img class="modal-img" src="${img}" alt="${title}">
-          <p class="modal-meta">${meta}</p>
-          <div class="modal-section">
-            <h3 class="modal-subtitle">🥗 Ingredients</h3>
-            <ul class="modal-list">${ingredientsHtml}</ul>
-          </div>
-          <div class="modal-section">
-            <h3 class="modal-subtitle">👩‍🍳 Steps</h3>
-            <ol class="modal-list numbered">${stepsHtml}</ol>
-          </div>
-          ${notes ? `<div class="modal-section">${notes}</div>` : ''}
-        </div>`;
-      const wrap = document.createElement('div');
-      wrap.className = 'modal-wrap';
-      wrap.innerHTML = html;
-      document.body.appendChild(wrap);
-      lockScroll(true);
-      const close = () => { wrap.remove(); lockScroll(false); };
-      wrap.querySelector('.modal-close').onclick = close;
-      wrap.querySelector('.modal-backdrop').onclick = close;
-      document.addEventListener('keydown', e=>{ if(e.key==='Escape') close(); });
-    }
-
-    gridEl.addEventListener('click', (e)=>{
-      const a = e.target.closest('a.view-btn[data-slug][data-slot]');
-      if(!a) return;
-      e.preventDefault();
-      if (!lastPlan) return;
-      const slot = a.getAttribute('data-slot');
-      const pick = lastPlan.mealPlan?.[slot];
-      const item = pick?.recipe;
-      if(!item) return alert('Recipe not found.');
-
-      const ing = (item.ingredients||[]).map(i=>{
-        const qty  = i.quantity ? `<strong>${i.quantity}</strong> ` : '';
-        const name = toTitle(i.slug);
-        const omit = i._hidden ? ' <em>(omitted)</em>' : '';
-        let caut = '';
-        if (i._caution) {
-          const subsList = (i.caution_subs || []).map(s => toTitle(s)).join(', ');
-          caut = subsList 
-            ? ` <em>⚠️ caution — consider replacing with: ${subsList}</em>` 
-            : ` <em>⚠️ caution</em>`;
+    container.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      cb.onchange = () => {
+        const slug = cb.dataset.slug;
+        if (cb.checked) {
+          if (selectedSet.size >= max) { cb.checked = false; return; }
+          selectedSet.add(slug);
+        } else {
+          selectedSet.delete(slug);
         }
-        const sub  = i.substituted ? ` <em>🔁 substitute: ${toTitle(i.substitute_slug)}</em>` : '';
-        return `<li>${qty}${name}${omit}${caut}${sub}</li>`;
-      }).join('');
-
-      const steps = (item.steps||[]).map(s=>`<li>${clean(s)}</li>`).join('');
-      const notes = item.notes ? `<p class="notes">${clean(item.notes)}</p>` : '';
-
-      showRecipeModal({
-        title: item.recipe_name,
-        img: `${IMG_BASE}${item.image_url}`,
-        meta: `<strong>${item.calories} kcal</strong> • ${item.protein ?? '-'} g protein • ${item.carbs ?? '-'} g carbs • ${item.fats ?? '-'} g fat • ${item.time_minutes} min • ${item.dietaryType}`,
-        ingredientsHtml: ing,
-        stepsHtml: steps,
-        notes
-      });
+        document.getElementById(counterElId).textContent = selectedSet.size;
+      };
     });
 
-    function profileToPayload() {
-      if (!user.profile) return null;
-      return {
-        user: {
-          gender: user.profile.gender,
-          age: user.profile.age,
-          height_cm: Math.round(user.profile.height || 0),
-          weight_kg: Math.round(user.profile.weight || 0),
-          activity: user.profile.activity,
-          goal: user.profile.goal,
-          food_preference: user.profile.dietaryType,
-          dislikes: (user.profile.dislikes || 'none').split(',').map(s=>s.trim()).filter(Boolean),
-          health_issues: (user.profile.health || 'none').split(',').map(s=>s.trim()).filter(Boolean)
-        }
-      };
-    }
+    document.getElementById(counterElId).textContent = selectedSet.size;
+  }
 
-    function currentExcludeMapFromPlan(plan) {
-      const map = {};
-      if (!plan) return map;
-      ['Breakfast','Lunch','Snack','Dinner'].forEach(slot=>{
-        const slug = plan.mealPlan?.[slot]?.recipe?.slug;
-        if (slug) map[slot] = [slug];
+  async function loadMetaLists(){
+    try {
+      const [healthRes, ingRes] = await Promise.all([
+        fetch(`${API}/api/meta/health`),
+        fetch(`${API}/api/meta/ingredients`)
+      ]);
+      const healthData = await healthRes.json();
+      const ingData = await ingRes.json();
+
+      state.allHealth = (healthData.items || []).map(x=>({ slug: x.slug, condition_name: x.condition_name }));
+      state.allIngs   = (ingData.items || []).map(x=>({ slug: x.slug, ingredient_name: x.ingredient_name, type: x.type }));
+
+      const p = loggedInUser.profile || {};
+      (Array.isArray(p.health_slugs) ? p.health_slugs : []).forEach(s => state.selHealth.add(s));
+      (Array.isArray(p.dislike_slugs) ? p.dislike_slugs : []).forEach(s => state.selIngs.add(s));
+
+      const healthList = document.getElementById('healthList');
+      const ingList = document.getElementById('ingList');
+
+      document.getElementById('healthSearch').addEventListener('input', (e)=>{
+        healthList.dataset.query = e.target.value || '';
+        renderCheckboxList(state.allHealth, healthList, state.selHealth, HEALTH_MAX, 'healthSelectedCount', 'condition_name', 'slug');
       });
-      return map;
-    }
-
-    let recentSlugs = JSON.parse(localStorage.getItem('recentSlugs') || '{}');
-
-    async function requestPlan(payload) {
-      payload.recentSlugs = recentSlugs;
-      const res = await fetch(MEALPLAN_URL, {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
-        body: JSON.stringify(payload)
+      document.getElementById('ingSearch').addEventListener('input', (e)=>{
+        ingList.dataset.query = e.target.value || '';
+        renderCheckboxList(state.allIngs, ingList, state.selIngs, ING_MAX, 'ingSelectedCount', 'ingredient_name', 'slug');
       });
-      const data = await res.json().catch(()=>({ ok:false, message:'Invalid JSON' }));
-      if (data.recentSlugs) {
-        recentSlugs = data.recentSlugs;
-        localStorage.setItem('recentSlugs', JSON.stringify(recentSlugs));
-      }
-      if (!res.ok || !data.ok) throw new Error(data.message || 'Failed to build meal plan');
-      return data;
+
+      renderCheckboxList(state.allHealth, healthList, state.selHealth, HEALTH_MAX, 'healthSelectedCount', 'condition_name', 'slug');
+      renderCheckboxList(state.allIngs, ingList, state.selIngs, ING_MAX, 'ingSelectedCount', 'ingredient_name', 'slug');
+
+    } catch (err) {
+      console.error('Failed to load meta lists', err);
+    }
+  }
+
+  // ---------- save/update profile ----------
+  document.getElementById("profileForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const height = readHeightCmFromForm();
+
+    const health_slugs = Array.from(state.selHealth);
+    const dislike_slugs = Array.from(state.selIngs);
+
+    const healthStr = health_slugs.join(', ') || 'none';
+    const dislikesStr = dislike_slugs.join(', ') || 'none';
+
+    const profile = {
+      gender: document.getElementById("gender").value,
+      age: parseInt(document.getElementById("age").value) || 0,
+      height,
+      heightUnit: document.getElementById('heightUnit').value,
+      weight: parseFloat(document.getElementById("weight").value) || 0,
+      activity: document.getElementById("activity").value,
+      goal: document.getElementById("goal").value,
+      dietaryType: document.getElementById("foodPref").value,
+      health_slugs,
+      dislike_slugs,
+      health: healthStr,
+      dislikes: dislikesStr,
+      profilePic: loggedInUser.profile?.profilePic || ""
+    };
+
+    if (profile.height < 120 || profile.weight < 35) {
+      alert('Please enter a realistic height and weight.');
+      return;
     }
 
-    async function generateMealPlan(){
-      if (!user.profile) {
-        summaryEl.innerHTML = `<span class="block text-center">Please complete your profile on the Dashboard first.</span>`;
-        gridEl.innerHTML = '';
+    try {
+      const res = await fetch(`${API}/api/users/profile/${encodeURIComponent(loggedInUser.email)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify(profile)
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        alert(data.message || 'Failed to update profile');
         return;
       }
-      statusEl.textContent = 'Generating…';
-      gridEl.innerHTML = '';
-      try{
-        const payload = profileToPayload();
-        payload.exclude = currentExcludeMapFromPlan(lastPlan);
-        const data = await requestPlan(payload);
-        lastPlan = data;
-        renderPlan(data);
-        statusEl.textContent = '';
-      }catch(err){
-        console.error(err);
-        statusEl.textContent = 'Failed to generate meal plan';
-      }
+
+      loggedInUser.profile = data.user.profile || profile;
+      localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
+      renderProfile(loggedInUser.profile);
+      alert('Profile saved!');
+    } catch (err) {
+      console.error(err);
+      alert('Server error while saving profile.');
     }
+  });
 
-    async function swapSlot(slot){
-      if (!user.profile) return;
-      statusEl.textContent = `Changing ${slot}…`;
-      try {
-        const payload = profileToPayload();
-        payload.exclude = currentExcludeMapFromPlan(lastPlan);
-        const fresh = await requestPlan(payload);
-        if (!lastPlan) lastPlan = fresh;
-        if (fresh.mealPlan?.[slot]) {
-          lastPlan.mealPlan[slot] = fresh.mealPlan[slot];
-          renderPlan(lastPlan);
-        } else {
-          lastPlan = fresh;
-          renderPlan(fresh);
-        }
-        statusEl.textContent = '';
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = `Failed to change ${slot}`;
+  // ---------- load existing profile ----------
+  async function loadProfile() {
+    try {
+      const res = await fetch(`${API}/api/users/profile/${encodeURIComponent(loggedInUser.email)}`);
+      const data = await res.json();
+      if (res.ok && data.ok && data.user?.profile && data.user.profile.gender) {
+        const p = data.user.profile;
+        p.height = +p.height || 0;
+        p.weight = +p.weight || 0;
+        renderProfile(p);
+      } else {
+        showForm();
       }
+    } catch (err) {
+      console.error('Failed to load profile', err);
+      showForm();
     }
+  }
 
-    document.getElementById('generateBtn').addEventListener('click', generateMealPlan);
-    document.getElementById('swapBreakfast').addEventListener('click', ()=>swapSlot('Breakfast'));
-    document.getElementById('swapLunch').addEventListener('click', ()=>swapSlot('Lunch'));
-    document.getElementById('swapSnack').addEventListener('click', ()=>swapSlot('Snack'));
-    document.getElementById('swapDinner').addEventListener('click', ()=>swapSlot('Dinner'));
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("#editProfile");
+    if (!btn) return;
+    showForm();
+  });
 
-    generateMealPlan();
+  document.getElementById("logoutBtn").addEventListener("click", function() {
+    localStorage.removeItem("loggedInUser");
+    window.location.href = "login.html";
+  });
+
+  // initial
+  loadProfile();
+  loadMetaLists();
   </script>
 </body>
 </html>
