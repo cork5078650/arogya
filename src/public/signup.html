@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up • Arogya</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* NOTE: Tailwind config for your color variables */
+    :root{
+  --teal: #1A5243;
+  --cream:#F5F0E1;
+  --peach:#E49377;
+  --sage: #B4D9BB;
+  --beige:#F1DABF;
+  --ink-700:#334155;
+  --ink-500:#64748b;
+  --ink-200:#e2e8f0;
+}
+    .bg-\[var\(--cream\)\] { background-color: var(--cream); }
+    .text-\[var\(--teal\)\] { color: var(--teal); }
+    .bg-\[var\(--teal\)\] { background-color: var(--teal); }
+    .hover\:text-\[var\(--sage\)\]:hover { color: var(--sage); }
+    .bg-\[var\(--sage\)\] { background-color: var(--sage); }
+    .bg-\[var\(--peach\)\] { background-color: var(--peach); }
+    .text-\[var\(--ink-700\)\] { color: var(--ink-700); }
+    .text-\[var\(--teal\)\] { color: var(--teal); }
+    .border-\[var\(--teal\)\] { border-color: var(--teal); }
+  </style>
+</head>
+<body class="bg-[var(--cream)] text-[var(--teal)] font-sans">
+  <header class="bg-[var(--teal)] fixed w-full top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-white">Arogya</h1>
+      <nav class="hidden md:flex space-x-8 font-medium">
+        <a href="index.html#home" class="text-white hover:text-[var(--sage)]">Home</a>
+        <a href="login.html" class="text-white hover:text-[var(--sage)]">Login</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="min-h-screen flex items-center justify-center pt-28 pb-12">
+    <div class="w-full max-w-md bg-[var(--sage)] p-8 rounded-xl shadow-lg">
+      <h2 class="text-3xl font-bold text-center mb-6 text-[var(--teal)]">Create Account</h2>
+
+      <form id="signupForm" class="space-y-4">
+        <div>
+          <label for="name" class="block font-medium mb-1">Full Name</label>
+          <input type="text" id="name" required class="w-full px-4 py-2 rounded-lg border bg-[var(--cream)]" />
+        </div>
+        <div>
+          <label for="email" class="block font-medium mb-1">Email</label>
+          <input type="email" id="email" required class="w-full px-4 py-2 rounded-lg border bg-[var(--cream)]" />
+        </div>
+        <div>
+          <label for="password" class="block font-medium mb-1">Password</label>
+          <input type="password" id="password" required class="w-full px-4 py-2 rounded-lg border bg-[var(--cream)]" />
+        </div>
+        <button id="signupBtn" type="submit" class="w-full bg-[var(--peach)] text-white py-2 rounded-lg font-semibold hover:bg-opacity-90">
+          Sign Up
+        </button>
+      </form>
+
+      <div id="verifyBlock" class="hidden mt-4 text-sm bg-[var(--cream)] rounded-lg p-3 border-l-4 border-[var(--teal)]">
+        <p class="mt-1 font-bold text-lg">Check Your Inbox! 📧</p>
+        <p class="mt-1">We’ve sent a verification link to <span id="emailEcho" class="font-semibold text-[var(--teal)]"></span>.
+        Please click it to finish creating your account.</p>
+        <div id="countdown" class="font-bold mt-2 text-red-500">Link expires in: <span id="timeRemaining"></span></div>
+        <p class="mt-2 text-xs text-[var(--ink-700)]">This page is waiting for you to verify and will auto-complete once done.</p>
+      </div>
+
+      <p id="message" class="mt-4 text-center text-sm"></p>
+
+      <p class="mt-6 text-center text-sm">
+        Already have an account?
+        <a href="login.html" class="text-[var(--teal)] hover:underline">Log in here</a>
+      </p>
+    </div>
+  </main>
+
+  <footer class="bg-[var(--teal)] text-white py-6 text-center">
+    &copy; 2025 Arogya
+  </footer>
+
+<script>
+  const API_BASE = 'http://localhost:4000';
+  const signupForm = document.getElementById('signupForm');
+  const signupBtn = document.getElementById('signupBtn');
+  const verifyBlock = document.getElementById('verifyBlock');
+  const emailEcho = document.getElementById('emailEcho');
+  const timeRemaining = document.getElementById('timeRemaining');
+  const msg = document.getElementById('message');
+
+  let pollTimer = null;
+  let countdownTimer = null;
+
+  function formatTime(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  function startCountdown(totalSeconds) {
+    let secondsLeft = totalSeconds;
+    timeRemaining.textContent = formatTime(secondsLeft);
+
+    countdownTimer = setInterval(() => {
+      secondsLeft--;
+      if (secondsLeft < 0) {
+        clearInterval(countdownTimer);
+      }
+      timeRemaining.textContent = formatTime(Math.max(0, secondsLeft));
+    }, 1000);
+  }
+
+  function startPolling(token, TTL) {
+      if (pollTimer) clearInterval(pollTimer);
+      if (countdownTimer) clearInterval(countdownTimer);
+      
+      startCountdown(TTL * 60);
+
+      pollTimer = setInterval(async () => {
+        try {
+            const r2 = await fetch(`${API_BASE}/api/users/signup/status/${token}`);
+            const s = await r2.json();
+
+            if (s.status === 'consumed') {
+                clearInterval(pollTimer);
+                clearInterval(countdownTimer);
+                msg.textContent = 'Email verified! Finalizing signup...';
+                
+                // Finalize the process (Step 3)
+                const r3 = await fetch(`${API_BASE}/api/users/signup/finalize`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ token })
+                });
+                const d3 = await r3.json();
+
+                if (!d3.ok) { 
+                    msg.textContent = d3.message || 'Failed to finalize signup. Please log in.';
+                    setTimeout(()=>location.href='login.html', 800);
+                    return; 
+                }
+
+                // Success: Store JWT and redirect
+                localStorage.setItem('token', d3.token);
+                localStorage.setItem('loggedInUser', JSON.stringify(d3.user));
+                msg.textContent = '✅ Account created! Redirecting to your dashboard...';
+                setTimeout(()=>location.href='dashboard.html', 800);
+
+            } else if (s.status === 'expired') {
+                clearInterval(pollTimer);
+                clearInterval(countdownTimer);
+                msg.textContent = 'Verification link expired. Please start the signup process again.';
+            }
+        } catch(err) {
+            console.error("Polling error:", err);
+        }
+      }, 5000);
+  }
+
+  signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    signupBtn.disabled = true;
+    msg.textContent = 'Starting signup...';
+
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+    
+    if (pollTimer) clearInterval(pollTimer);
+    if (countdownTimer) clearInterval(countdownTimer);
+    
+    try {
+      // 1) POST /signup/start
+      const r1 = await fetch(`${API_BASE}/api/users/signup/start`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ name, email, password })
+      });
+      const d1 = await r1.json();
+
+      if (!d1.ok) {
+        msg.textContent = d1.message || 'Could not start signup.';
+        signupBtn.disabled = false;
+        return;
+      }
+
+      // Success: Transition UI to verification mode
+      signupForm.classList.add('hidden');
+      verifyBlock.classList.remove('hidden');
+      emailEcho.textContent = email;
+      msg.textContent = d1.message;
+
+      // 2) Start Polling and Countdown
+      startPolling(d1.token, d1.expiresInMinutes);
+
+    } catch (err) {
+      console.error(err);
+      msg.textContent = 'Server error. Try again later.';
+      signupBtn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
