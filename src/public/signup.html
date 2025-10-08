@@ -61,13 +61,7 @@
         </button>
       </form>
 
-      <div id="verifyBlock" class="hidden mt-4 text-sm bg-[var(--cream)] rounded-lg p-3 border-l-4 border-[var(--teal)]">
-        <p class="mt-1 font-bold text-lg">Check Your Inbox! 📧</p>
-        <p class="mt-1">We’ve sent a verification link to <span id="emailEcho" class="font-semibold text-[var(--teal)]"></span>.
-        Please click it to finish creating your account.</p>
-        <div id="countdown" class="font-bold mt-2 text-red-500">Link expires in: <span id="timeRemaining"></span></div>
-        <p class="mt-2 text-xs text-[var(--ink-700)]">This page is waiting for you to verify and will auto-complete once done.</p>
-      </div>
+      <!-- removed verification block (not needed in simple flow) -->
 
       <p id="message" class="mt-4 text-center text-sm"></p>
 
@@ -84,119 +78,40 @@
 
 <script>
   const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? 'http://localhost:4000'
-  : location.origin;
+    ? 'http://localhost:4000'
+    : location.origin;
+
   const signupForm = document.getElementById('signupForm');
   const signupBtn = document.getElementById('signupBtn');
-  const verifyBlock = document.getElementById('verifyBlock');
-  const emailEcho = document.getElementById('emailEcho');
-  const timeRemaining = document.getElementById('timeRemaining');
   const msg = document.getElementById('message');
-
-  let pollTimer = null;
-  let countdownTimer = null;
-
-  function formatTime(totalSeconds) {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }
-
-  function startCountdown(totalSeconds) {
-    let secondsLeft = totalSeconds;
-    timeRemaining.textContent = formatTime(secondsLeft);
-
-    countdownTimer = setInterval(() => {
-      secondsLeft--;
-      if (secondsLeft < 0) {
-        clearInterval(countdownTimer);
-      }
-      timeRemaining.textContent = formatTime(Math.max(0, secondsLeft));
-    }, 1000);
-  }
-
-  function startPolling(token, TTL) {
-      if (pollTimer) clearInterval(pollTimer);
-      if (countdownTimer) clearInterval(countdownTimer);
-      
-      startCountdown(TTL * 60);
-
-      pollTimer = setInterval(async () => {
-        try {
-            const r2 = await fetch(`${API_BASE}/api/users/signup/status/${token}`);
-            const s = await r2.json();
-
-            if (s.status === 'consumed') {
-                clearInterval(pollTimer);
-                clearInterval(countdownTimer);
-                msg.textContent = 'Email verified! Finalizing signup...';
-                
-                // Finalize the process (Step 3)
-                const r3 = await fetch(`${API_BASE}/api/users/signup/finalize`, {
-                    method: 'POST',
-                    headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ token })
-                });
-                const d3 = await r3.json();
-
-                if (!d3.ok) { 
-                    msg.textContent = d3.message || 'Failed to finalize signup. Please log in.';
-                    setTimeout(()=>location.href='login.html', 800);
-                    return; 
-                }
-
-                // Success: Store JWT and redirect
-                localStorage.setItem('token', d3.token);
-                localStorage.setItem('loggedInUser', JSON.stringify(d3.user));
-                msg.textContent = '✅ Account created! Redirecting to your dashboard...';
-                setTimeout(()=>location.href='dashboard.html', 800);
-
-            } else if (s.status === 'expired') {
-                clearInterval(pollTimer);
-                clearInterval(countdownTimer);
-                msg.textContent = 'Verification link expired. Please start the signup process again.';
-            }
-        } catch(err) {
-            console.error("Polling error:", err);
-        }
-      }, 5000);
-  }
 
   signupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     signupBtn.disabled = true;
-    msg.textContent = 'Starting signup...';
+    msg.textContent = 'Creating account...';
 
     const name = document.getElementById('name').value.trim();
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value.trim();
-    
-    if (pollTimer) clearInterval(pollTimer);
-    if (countdownTimer) clearInterval(countdownTimer);
-    
+
     try {
-      // 1) POST /signup/start
-      const r1 = await fetch(`${API_BASE}/api/users/signup/start`, {
+      const res = await fetch(`${API_BASE}/api/users/signup`, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ name, email, password })
       });
-      const d1 = await r1.json();
+      const data = await res.json();
 
-      if (!d1.ok) {
-        msg.textContent = d1.message || 'Could not start signup.';
+      if (!data.ok) {
+        msg.textContent = data.message || 'Could not create account.';
         signupBtn.disabled = false;
         return;
       }
 
-      // Success: Transition UI to verification mode
-      signupForm.classList.add('hidden');
-      verifyBlock.classList.remove('hidden');
-      emailEcho.textContent = email;
-      msg.textContent = d1.message;
-
-      // 2) Start Polling and Countdown
-      startPolling(d1.token, d1.expiresInMinutes);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('loggedInUser', JSON.stringify(data.user));
+      msg.textContent = '✅ Account created! Redirecting to your dashboard...';
+      setTimeout(()=>location.href='dashboard.html', 800);
 
     } catch (err) {
       console.error(err);
