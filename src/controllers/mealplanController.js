@@ -130,49 +130,30 @@ function isNonVegTag(tag) {
   return t.includes('non') && t.includes('veg');
 }
 
-/* 🔁 REPLACED: fitsTolerance — more robust & avoids divide-by-zero */
 function fitsTolerance(r, kcalTarget, protTarget, kcalTol, protTol, slot){
   let upperTol = kcalTol;
-  // for lighter meals, allow much wider kcal tolerance
-  if (slot === 'Breakfast' || slot === 'Snack') upperTol = Math.max(upperTol, 0.80);
-
-  // avoid divide-by-zero; set sensible minimums
-  const kt = Math.max(kcalTarget || 0, 150);
-  const pt = Math.max(protTarget || 0, 10);
-
-  const kcalOk = Math.abs((r.calories - kt) / kt) <= upperTol;
-  const proOk  = Math.abs(((r.protein||0) - pt) / pt) <= protTol;
+  if (slot === 'Breakfast' || slot === 'Snack') upperTol = 0.80;
+  const kcalOk = Math.abs((r.calories - kcalTarget) / (kcalTarget || 1)) <= upperTol;
+  const proOk  = Math.abs(((r.protein||0) - protTarget) / (protTarget || 1)) <= protTol;
   return kcalOk && proOk;
 }
 
 function scoreRecipe(r, kcalTarget, protTarget, dislikeSet){
-  const kt = Math.max(kcalTarget || 0, 150);
-  const pt = Math.max(protTarget || 0, 10);
-  const kcalErr = Math.abs((r.calories - kt) / kt);
+  const kcalErr = Math.abs((r.calories - kcalTarget) / (kcalTarget || 1));
   const protVal = (r.protein || 0);
-  const protErr = Math.abs((protVal - pt) / pt);
+  const protErr = Math.abs((protVal - protTarget) / (protTarget || 1));
   const dislikeCount = (r.ingredients||[]).reduce((a,i)=>a + (dislikeSet.has(lc(i.slug)) ? 1 : 0), 0);
   const missingProtPenalty = protVal ? 0 : PENALTY_MISSING_PROT;
   return W_CAL*(kcalErr*kcalErr) + W_PRO*(protErr*protErr) + dislikeCount*PENALTY_DISLIKE + missingProtPenalty;
 }
 
-/* 🔁 REPLACED: selectForSlot — flexible query + safe fallbacks + logs */
 async function selectForSlot({
   slot, kcalTarget, proteinTarget, dislikes, forbiddenSet, cautionSet, foodPref, excludeSlugs
 }){
   const Recipes = mongoose.connection.db.collection('recipes');
 
-  const slotName = String(slot || '').trim();
-  const slotRx = new RegExp(`^${slotName}$`, 'i');
-
-  // Flexible search across alternate fields & tags
   const baseQuery = {
-    $or: [
-      { meal_type: slotRx },
-      { mealType: slotRx },
-      { meal: slotRx },
-      { tags: { $elemMatch: { $regex: slotRx } } }
-    ]
+    meal_type: { $regex: new RegExp(`^${(slot||'').trim()}$`,'i') }
   };
 
   const pref = lc(foodPref);
@@ -181,49 +162,14 @@ async function selectForSlot({
 
   let pool = await Recipes.find(baseQuery).project({
     _id:0,
-    slug:1, recipe_name:1, meal_type:1, mealType:1, meal:1,
+    slug:1, recipe_name:1, meal_type:1,
     calories:1, protein:1, carbs:1, fats:1,
     time_minutes:1, dietaryType:1,
     tags:1, image_url:1,
     ingredients:1, steps:1, notes:1
   }).limit(1000).toArray();
+  if(!pool.length) return null;
 
-  console.log(`[MealPlan] [${slotName}] matches with dietary filter: ${pool.length}`);
-
-  // Fallback 1: if nothing and vegetarian/vegan was set, retry without dietary filter
-  if (!pool.length && (pref === 'vegetarian' || pref === 'vegan')) {
-    const loose = { ...baseQuery };
-    delete loose.dietaryType;
-    pool = await Recipes.find(loose).project({
-      _id:0,
-      slug:1, recipe_name:1, meal_type:1, mealType:1, meal:1,
-      calories:1, protein:1, carbs:1, fats:1,
-      time_minutes:1, dietaryType:1,
-      tags:1, image_url:1,
-      ingredients:1, steps:1, notes:1
-    }).limit(1000).toArray();
-    console.warn(`[MealPlan] [${slotName}] retry without dietary filter: ${pool.length}`);
-  }
-
-  // Fallback 2: if still nothing, broaden to any recipe (as absolute last resort)
-  if (!pool.length) {
-    pool = await Recipes.find({}).project({
-      _id:0,
-      slug:1, recipe_name:1, meal_type:1, mealType:1, meal:1,
-      calories:1, protein:1, carbs:1, fats:1,
-      time_minutes:1, dietaryType:1,
-      tags:1, image_url:1,
-      ingredients:1, steps:1, notes:1
-    }).limit(1000).toArray();
-    console.warn(`[MealPlan] [${slotName}] widened to ANY recipe: ${pool.length}`);
-  }
-
-  if(!pool.length) {
-    console.warn(`[MealPlan] [${slotName}] no recipes found even after wide fallback.`);
-    return null;
-  }
-
-  // normalize numbers
   pool = pool.map(r => ({
     ...r,
     calories: +r.calories || 0,
@@ -232,15 +178,10 @@ async function selectForSlot({
     fats:     +r.fats     || 0
   }));
 
-  // exclude recently used
   const excludeSet = new Set((excludeSlugs||[]).map(lc));
   pool = pool.filter(r => !excludeSet.has(lc(r.slug)));
-  if(!pool.length) {
-    console.warn(`[MealPlan] [${slotName}] all candidates excluded by recency list.`);
-    return null;
-  }
+  if(!pool.length) return null;
 
-  // remove hard-blocked ingredients
   const hardBlock = new Set(forbiddenSet);
   let strict = pool.filter(r => !(r.ingredients||[]).some(i => hardBlock.has(lc(i.slug))));
   if(!strict.length) strict = pool;
@@ -248,20 +189,15 @@ async function selectForSlot({
   const dislikeSet = new Set(dislikes);
   const caution = new Set(cautionSet);
 
-  // tolerance passes
-  let candidates = strict.filter(r => fitsTolerance(r, kcalTarget, proteinTarget, PASS1_KCAL_TOL, PASS1_PROT_TOL, slotName));
+  let candidates = strict.filter(r => fitsTolerance(r, kcalTarget, proteinTarget, PASS1_KCAL_TOL, PASS1_PROT_TOL, slot));
   if(!candidates.length){
-    candidates = strict.filter(r => fitsTolerance(r, kcalTarget, proteinTarget, PASS2_KCAL_TOL, PASS2_PROT_TOL, slotName));
+    candidates = strict.filter(r => fitsTolerance(r, kcalTarget, proteinTarget, PASS2_KCAL_TOL, PASS2_PROT_TOL, slot));
   }
   if(!candidates.length) candidates = strict.slice();
 
-  console.log(`[MealPlan] [${slotName}] candidates after tolerance: ${candidates.length}`);
-
-  // score by kcal/protein closeness and dislikes penalty
   let scored = candidates.map(r => ({ r, s: scoreRecipe(r, kcalTarget, proteinTarget, dislikeSet) }))
                          .sort((a,b)=>a.s-b.s);
 
-  // prefer non-veg if requested and available
   const preferNonVeg = lc(foodPref) === 'non-vegetarian' || lc(foodPref) === 'non vegetarian';
   if (preferNonVeg && scored.length) {
     const nonVeg = [], veg = [];
@@ -274,7 +210,6 @@ async function selectForSlot({
   const pick = scored.length ? scored[Math.min(randInt(TOP_K), scored.length-1)].r : null;
   if(!pick) return null;
 
-  // build substitutions & cautions
   const dislikedInChosen = (pick.ingredients||[]).filter(i => dislikeSet.has(lc(i.slug)));
   const cautionInChosen = (pick.ingredients||[]).filter(i => caution.has(lc(i.slug)));
 
@@ -308,7 +243,6 @@ async function selectForSlot({
     return i;
   });
 
-  // clean steps/notes of omitted or substituted items
   const omitSet = new Set([
     ...Array.from(hardBlock),
     ...dislikedInChosen.map(i=>lc(i.slug)).filter(s=>!subMap[s])
@@ -392,3 +326,4 @@ async function buildMealPlan(payload){
 }
 
 module.exports = { buildMealPlan };
+
