@@ -1,3 +1,4 @@
+// src/routes/mealplan.js
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -9,6 +10,10 @@ function assertConnected(req, res, next) {
   next();
 }
 
+// quick GET to sanity-check mounting in a browser:
+router.get('/ping', (req, res) => res.json({ ok: true, route: 'mealplan' }));
+
+// actual mealplan endpoint (POST)
 router.post('/', assertConnected, async (req, res) => {
   try {
     const plan = await buildMealPlan(req.body || {});
